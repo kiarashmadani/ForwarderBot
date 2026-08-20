@@ -4,7 +4,11 @@ const {
     removeGroup,
     getGroups,
     addUser,
-    getUsers
+    getUsers,
+    getForwardingSession,
+    startForwardingSession,
+    saveForwardingSession,
+    clearForwardingSession
 } = require('./storage');
 
 const { Telegraf, Markup } = require('telegraf');
@@ -69,6 +73,11 @@ async function deleteGroupStartMessage(ctx) {
  *     targets: [-100111111111, 123456789]
  * }
  */
+/*
+ * Retired for webhook deployment: a Vercel function can stop after any
+ * request, so this in-memory Map would lose a user's forwarding session.
+ * The original code is preserved below as requested.
+ *
 const sessions = new Map();
 
 function getSession(userId) {
@@ -86,6 +95,7 @@ function getSession(userId) {
 function clearSession(userId) {
     sessions.delete(userId);
 }
+*/
 
 async function buildTargetKeyboard(session) {
     const groups = await getGroups();
@@ -309,9 +319,11 @@ bot.action('forward', async(ctx) => {
 
     const userId = ctx.from.id;
 
-    clearSession(userId);
+    // Retired: clearSession(userId); // Memory-only sessions do not survive Vercel restarts.
+    await clearForwardingSession(userId);
 
-    getSession(userId);
+    // Retired: getSession(userId); // A MongoDB session is created instead.
+    await startForwardingSession(userId);
 
     return ctx.reply(
         'Send me the message you want to forward.'
@@ -335,7 +347,8 @@ bot.on('message', async(ctx) => {
         return;
     }
 
-    const session = sessions.get(ctx.from.id);
+    // Retired: const session = sessions.get(ctx.from.id); // Memory-only lookup.
+    const session = await getForwardingSession(ctx.from.id);
 
     if (!session) {
         return;
@@ -344,6 +357,8 @@ bot.on('message', async(ctx) => {
     session.messageId = ctx.message.message_id;
     session.sourceChatId = ctx.chat.id;
     session.targets = [];
+
+    await saveForwardingSession(session);
 
     return ctx.reply(
         'Select the destinations:',
@@ -365,7 +380,8 @@ bot.action(/^target:g:(-?\d+)$/, async(ctx) => {
     }
 
     const groupId = Number(ctx.match[1]);
-    const session = sessions.get(ctx.from.id);
+    // Retired: const session = sessions.get(ctx.from.id); // Memory-only lookup.
+    const session = await getForwardingSession(ctx.from.id);
 
     if (!session) {
         return ctx.reply(
@@ -380,6 +396,8 @@ bot.action(/^target:g:(-?\d+)$/, async(ctx) => {
     } else {
         session.targets.splice(index, 1);
     }
+
+    await saveForwardingSession(session);
 
     return ctx.editMessageReplyMarkup(
         (await buildTargetKeyboard(session)).reply_markup
@@ -400,7 +418,8 @@ bot.action(/^target:u:(\d+)$/, async(ctx) => {
     }
 
     const userId = Number(ctx.match[1]);
-    const session = sessions.get(ctx.from.id);
+    // Retired: const session = sessions.get(ctx.from.id); // Memory-only lookup.
+    const session = await getForwardingSession(ctx.from.id);
 
     if (!session) {
         return ctx.reply(
@@ -415,6 +434,8 @@ bot.action(/^target:u:(\d+)$/, async(ctx) => {
     } else {
         session.targets.splice(index, 1);
     }
+
+    await saveForwardingSession(session);
 
     return ctx.editMessageReplyMarkup(
         (await buildTargetKeyboard(session)).reply_markup
@@ -435,7 +456,8 @@ bot.action('target:send', async(ctx) => {
     }
 
     const userId = ctx.from.id;
-    const session = sessions.get(userId);
+    // Retired: const session = sessions.get(userId); // Memory-only lookup.
+    const session = await getForwardingSession(userId);
 
     if (!session) {
         return ctx.reply(
@@ -489,7 +511,8 @@ bot.action('target:send', async(ctx) => {
         }
     }
 
-    clearSession(userId);
+    // Retired: clearSession(userId); // Memory-only cleanup.
+    await clearForwardingSession(userId);
 
     return ctx.reply(text);
 });
@@ -507,7 +530,8 @@ bot.action('target:cancel', async(ctx) => {
         return;
     }
 
-    clearSession(ctx.from.id);
+    // Retired: clearSession(ctx.from.id); // Memory-only cleanup.
+    await clearForwardingSession(ctx.from.id);
 
     return ctx.editMessageText(
         'Forwarding cancelled.'

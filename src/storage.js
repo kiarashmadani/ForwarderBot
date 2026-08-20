@@ -126,6 +126,13 @@ async function connectDatabase() {
 
     await database.collection('users').createIndex({ id: 1 }, { unique: true });
 
+    // Webhook functions may restart between Telegram updates, so forwarding
+    // sessions must live in MongoDB instead of only in the server's memory.
+    await database.collection('forwarding_sessions').createIndex(
+        { userId: 1 },
+        { unique: true }
+    );
+
     console.log(`Connected to MongoDB database: ${databaseName}`);
 
     return database;
@@ -189,6 +196,39 @@ async function getUsers() {
         .toArray();
 }
 
+async function getForwardingSession(userId) {
+    return getDatabase()
+        .collection('forwarding_sessions')
+        .findOne({ userId });
+}
+
+async function startForwardingSession(userId) {
+    const session = {
+        userId,
+        messageId: null,
+        sourceChatId: null,
+        targets: []
+    };
+
+    await saveForwardingSession(session);
+
+    return session;
+}
+
+async function saveForwardingSession(session) {
+    await getDatabase().collection('forwarding_sessions').updateOne(
+        { userId: session.userId },
+        { $set: session },
+        { upsert: true }
+    );
+}
+
+async function clearForwardingSession(userId) {
+    await getDatabase().collection('forwarding_sessions').deleteOne({
+        userId
+    });
+}
+
 module.exports = {
     connectDatabase,
     closeDatabase,
@@ -196,5 +236,9 @@ module.exports = {
     removeGroup,
     getGroups,
     addUser,
-    getUsers
+    getUsers,
+    getForwardingSession,
+    startForwardingSession,
+    saveForwardingSession,
+    clearForwardingSession
 };

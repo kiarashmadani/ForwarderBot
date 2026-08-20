@@ -1,4 +1,8 @@
 require('dotenv').config();
+/*
+ * Retired for Vercel webhook deployment: Vercel invokes api/telegram-webhook.js
+ * for each Telegram update, so this continuously running HTTP server is not used.
+ * The original long-polling startup code is preserved here as requested.
 const {
     connectDatabase,
     closeDatabase
@@ -48,3 +52,4 @@ process.once('SIGINT', () => {
 process.once('SIGTERM', () => {
     stopApplication('SIGTERM');
 });
+*/
