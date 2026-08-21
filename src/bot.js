@@ -287,7 +287,7 @@ bot.on('my_chat_member', async(ctx) => {
         newStatus === 'member' ||
         newStatus === 'administrator'
     ) {
-        await addGroup(chat, ctx); //Add the group to the database if it doesn't exist yet
+        await addGroup(chat, ctx.from); //Add the group to the database if it doesn't exist yet
         console.log(
             `Bot joined group: ${chat.title} (${chat.id})`
         );

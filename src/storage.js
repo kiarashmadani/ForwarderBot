@@ -148,13 +148,13 @@ function getDatabase() {
     return database;
 }
 
-async function addGroup(chat, ctx) {
+async function addGroup(chat, user) {
     await getDatabase().collection('groups').updateOne({ id: chat.id }, {
         $set: {
             id: chat.id,
             title: chat.title,
             type: chat.type,
-            adder: ctx.from || null //added here a code
+            adder: user.username
         }
     }, { upsert: true });
 }
