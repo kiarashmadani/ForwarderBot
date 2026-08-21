@@ -9,9 +9,7 @@ const {
 
 const { Telegraf, Markup } = require('telegraf');
 
-const {
-    forwardToTargets
-} = require('./forwarder');
+const { forwardToTargets } = require('./forwarder');
 
 //-----------Declaring Variables and Functions
 const token = process.env.BOT_TOKEN;
@@ -21,6 +19,7 @@ if (!token) {
     throw new Error('BOT_TOKEN is missing. Add it to your .env file.');
 }
 
+//Check if the bot is running in a private chat
 function isPrivateChat(ctx) {
     return ctx.chat && ctx.chat.type === 'private';
 }
@@ -32,21 +31,7 @@ function isGroupChat(ctx) {
     );
 }
 
-const recentlyAddedGroups = new Map();
-const RECENT_GROUP_ADD_TIMEOUT = 60 * 1000;
-
-function markGroupAsRecentlyAdded(chatId) {
-    recentlyAddedGroups.set(chatId, Date.now());
-}
-
-function wasRecentlyAdded(chatId) {
-    const addedAt = recentlyAddedGroups.get(chatId);
-
-    recentlyAddedGroups.delete(chatId);
-
-    return addedAt && Date.now() - addedAt < RECENT_GROUP_ADD_TIMEOUT;
-}
-
+//Function to delete the group start message if the bot has permission 
 async function deleteGroupStartMessage(ctx) {
     try {
         await ctx.deleteMessage();
@@ -58,8 +43,26 @@ async function deleteGroupStartMessage(ctx) {
     }
 }
 
-/*
- * Temporary forwarding sessions.
+/* Recently Added !!!BUG!!!
+const recentlyAddedGroups = new Map();
+const RECENT_GROUP_ADD_TIMEOUT = 60 * 1000;
+
+function markGroupAsRecentlyAdded(chatId) {
+    recentlyAddedGroups.set(chatId, Date.now());
+}
+
+function isAddedBefore(chatId) {
+    const addedAt = recentlyAddedGroups.get(chatId);
+
+    recentlyAddedGroups.delete(chatId);
+
+    return addedAt && Date.now() - addedAt < RECENT_GROUP_ADD_TIMEOUT;
+}
+*/
+
+
+/* Temporary forwarding sessions.
+ *
  *
  * Example:
  *
@@ -87,12 +90,18 @@ function clearSession(userId) {
     sessions.delete(userId);
 }
 
+//---------------------------------------------------
+//BUILDING THE TARGETS KEYBOARD FOR USERS TO SELECT WHO THEY WANT TO FORWARD THE MESSAGE TO
+//------------------------------------------------------
+
+//Function to Display The Targets Toggles for users 
 async function buildTargetKeyboard(session) {
-    const groups = await getGroups();
+    const groups = await getGroups(); //Getting These 2 Methods from Database 
     const users = await getUsers();
 
     const rows = [];
 
+    //Adding Groups to the Forward's List
     for (const group of groups) {
         const selected = session.targets.includes(group.id);
 
@@ -104,6 +113,9 @@ async function buildTargetKeyboard(session) {
         ]);
     }
 
+
+    //Adding Users to the Forward's List
+    /*
     for (const user of users) {
         const selected = session.targets.includes(user.id);
 
@@ -118,6 +130,7 @@ async function buildTargetKeyboard(session) {
             )
         ]);
     }
+    */
 
     rows.push([
         Markup.button.callback(
@@ -129,7 +142,7 @@ async function buildTargetKeyboard(session) {
     rows.push([
         Markup.button.callback(
             'CANCEL',
-            'target:cancel'
+            'Cancel'
         )
     ]);
 
@@ -142,9 +155,8 @@ async function buildTargetKeyboard(session) {
 // ---------------------------------------------------------
 
 bot.start(async(ctx) => {
-
-    if (isPrivateChat(ctx)) {
-        await addUser(ctx.from);
+    if (isPrivateChat(ctx)) { //Only Starts for Private Chats, not for Groups
+        await addUser(ctx.from); //Add User's Name to the Database
 
         return ctx.reply(
             'Welcome to the Forwarder Bot! What would you like to do?',
@@ -173,17 +185,17 @@ bot.start(async(ctx) => {
         return;
     }
 
-    const isNewGroup = wasRecentlyAdded(ctx.chat.id);
 
-    // addGroup is idempotent: it adds missing groups but never duplicates one.
-    await addGroup(ctx.chat);
+    // addGroup : it adds missing groups but never duplicates one.
+    // const isNewGroup = isAddedBefore(ctx.chat.id);
+    // await addGroup(ctx.chat);
 
-    if (!isNewGroup) {
-        await ctx.telegram.sendMessage(
-            ctx.from.id,
-            'This bot has been already added to this group!'
-        );
-    }
+    // if (!isNewGroup) {
+    //     await ctx.telegram.sendMessage(
+    //         ctx.from.id,
+    //         'This bot has been already added to this group!'
+    //     );
+    // }
 
     return deleteGroupStartMessage(ctx);
 });
@@ -192,18 +204,18 @@ bot.start(async(ctx) => {
 // ADD BOT TO GROUP
 // ---------------------------------------------------------
 
+// delaring "Add" action
 bot.action('add', async(ctx) => {
 
-    await ctx.answerCbQuery();
+    await ctx.answerCbQuery(); //Stops the loading animation on the button after recieving data
 
     if (!isPrivateChat(ctx)) {
         return;
     }
 
-    const botInfo = await ctx.telegram.getMe();
+    const botInfo = await ctx.telegram.getMe(); //return an Object of Bot's Information
 
-    const addToGroupUrl =
-        `https://t.me/${botInfo.username}?startgroup`;
+    const addToGroupUrl = `https://t.me/${botInfo.username}?startgroup`;
 
     return ctx.reply(
         'Choose the group where you want to add me:',
@@ -231,9 +243,9 @@ bot.action('listgroups', async(ctx) => {
         return;
     }
 
-    const groups = await getGroups();
+    const groups = await getGroups(); //Get group's list from the database 
 
-    if (groups.length === 0) {
+    if (groups.length === 0) { //Check emptyness
         return ctx.reply(
             'The bot has not joined any groups yet.'
         );
@@ -245,6 +257,7 @@ bot.action('listgroups', async(ctx) => {
         message += `• ${group.title}\n`;
         message += `  ID: ${group.id}\n`;
         message += `  Type: ${group.type}\n\n`;
+        message += `  User: You\n\n`;
     }
 
     return ctx.reply(message);
@@ -252,9 +265,9 @@ bot.action('listgroups', async(ctx) => {
 
 
 // ---------------------------------------------------------
-// BOT GROUP MEMBERSHIP CHANGES
+// BOT'S ROLE IN GROUPS STATUS
 // ---------------------------------------------------------
-
+//Checking and Reacting to the Bot's Membership Changes in Groups (Added, Removed, Kicked, Left)
 bot.on('my_chat_member', async(ctx) => {
 
     const update = ctx.myChatMember;
@@ -269,12 +282,12 @@ bot.on('my_chat_member', async(ctx) => {
 
     const newStatus = update.new_chat_member.status;
 
+    //Joined
     if (
         newStatus === 'member' ||
         newStatus === 'administrator'
     ) {
-        await addGroup(chat);
-        markGroupAsRecentlyAdded(chat.id);
+        await addGroup(chat, ctx); //Add the group to the database if it doesn't exist yet
         console.log(
             `Bot joined group: ${chat.title} (${chat.id})`
         );
@@ -282,6 +295,7 @@ bot.on('my_chat_member', async(ctx) => {
         return;
     }
 
+    //Left
     if (
         newStatus === 'left' ||
         newStatus === 'kicked'
@@ -309,9 +323,8 @@ bot.action('forward', async(ctx) => {
 
     const userId = ctx.from.id;
 
-    clearSession(userId);
-
-    getSession(userId);
+    clearSession(userId); //Clear any previous session for the user
+    getSession(userId); //Create a new session for the user
 
     return ctx.reply(
         'Send me the message you want to forward.'
@@ -329,18 +342,19 @@ bot.on('message', async(ctx) => {
         return;
     }
 
-    const messageText = ctx.message.text;
+    const messageText = ctx.message.text; // Getting the text from User's message
 
-    if (messageText && messageText.startsWith('/')) {
+    if (messageText && messageText.startsWith('/')) { //check if it's not command
         return;
     }
 
-    const session = sessions.get(ctx.from.id);
+    const session = sessions.get(ctx.from.id); //Giving a Null filled Object with chat's information from sessions Map 
 
     if (!session) {
         return;
     }
 
+    //Store the message ID and source chat ID in the session for later forwarding
     session.messageId = ctx.message.message_id;
     session.sourceChatId = ctx.chat.id;
     session.targets = [];
@@ -356,7 +370,7 @@ bot.on('message', async(ctx) => {
 // SELECT / DESELECT GROUP
 // ---------------------------------------------------------
 
-bot.action(/^target:g:(-?\d+)$/, async(ctx) => {
+bot.action(/^target:g:(-?\d+)$/, async(ctx) => { //Reg ex for matching the group ID in the callback data
 
     await ctx.answerCbQuery();
 
@@ -385,42 +399,6 @@ bot.action(/^target:g:(-?\d+)$/, async(ctx) => {
         (await buildTargetKeyboard(session)).reply_markup
     );
 });
-
-
-// ---------------------------------------------------------
-// SELECT / DESELECT USER
-// ---------------------------------------------------------
-
-bot.action(/^target:u:(\d+)$/, async(ctx) => {
-
-    await ctx.answerCbQuery();
-
-    if (!isPrivateChat(ctx)) {
-        return;
-    }
-
-    const userId = Number(ctx.match[1]);
-    const session = sessions.get(ctx.from.id);
-
-    if (!session) {
-        return ctx.reply(
-            'There is no active forwarding session.'
-        );
-    }
-
-    const index = session.targets.indexOf(userId);
-
-    if (index === -1) {
-        session.targets.push(userId);
-    } else {
-        session.targets.splice(index, 1);
-    }
-
-    return ctx.editMessageReplyMarkup(
-        (await buildTargetKeyboard(session)).reply_markup
-    );
-});
-
 
 // ---------------------------------------------------------
 // SEND
@@ -459,6 +437,7 @@ bot.action('target:send', async(ctx) => {
         `Forwarding to ${session.targets.length} destination(s)...`
     );
 
+    //Getting results array from forwarder.js
     const results = await forwardToTargets(
         bot,
         session.sourceChatId,
@@ -466,6 +445,7 @@ bot.action('target:send', async(ctx) => {
         session.targets
     );
 
+    //spliting results to 2 success / failed arrays 
     const successful = results.filter(
         result => result.success
     );
@@ -474,6 +454,7 @@ bot.action('target:send', async(ctx) => {
         result => !result.success
     );
 
+    //displaying reply
     let text =
         `Forwarding completed.\n\n` +
         `Successful: ${successful.length}\n` +
@@ -499,7 +480,7 @@ bot.action('target:send', async(ctx) => {
 // CANCEL
 // ---------------------------------------------------------
 
-bot.action('target:cancel', async(ctx) => {
+bot.action('Cancel', async(ctx) => {
 
     await ctx.answerCbQuery();
 
