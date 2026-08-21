@@ -256,8 +256,8 @@ bot.action('listgroups', async(ctx) => {
     for (const group of groups) {
         message += `• ${group.title}\n`;
         message += `  ID: ${group.id}\n`;
-        message += `  Type: ${group.type}\n\n`;
-        message += `  User: You\n\n`;
+        message += `  Type: ${group.type}\n`;
+        message += `  User: ${group.adder}\n\n`;
     }
 
     return ctx.reply(message);
