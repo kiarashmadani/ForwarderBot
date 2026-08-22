@@ -245,7 +245,7 @@ bot.action('listgroups', async(ctx) => {
     }
 
     const groups = await getGroups(); //Get group's list from the database 
-    const groupsList = groups.filter(group => groups.adder === session.from); //Filtering groups to only shows the groups which this user has added the bot to, not all the groups the bot is in
+    const groupsList = groups.filter(group => groups.adder === ctx.from); //Filtering groups to only shows the groups which this user has added the bot to, not all the groups the bot is in
 
 
     if (groupsList.length === 0) { //Check emptyness
