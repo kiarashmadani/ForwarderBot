@@ -98,11 +98,12 @@ function clearSession(userId) {
 async function buildTargetKeyboard(session) {
     const groups = await getGroups(); //Getting These 2 Methods from Database 
     const users = await getUsers();
+    const groupsList = groups.filter(group => groups.adder === session.from); //Filtering groups to only shows the groups which this user has added the bot to, not all the groups the bot is in
 
     const rows = [];
 
     //Adding Groups to the Forward's List
-    for (const group of groups) {
+    for (const group of groupsList) {
         const selected = session.targets.includes(group.id);
 
         rows.push([
@@ -244,8 +245,10 @@ bot.action('listgroups', async(ctx) => {
     }
 
     const groups = await getGroups(); //Get group's list from the database 
+    const groupsList = groups.filter(group => groups.adder === session.from); //Filtering groups to only shows the groups which this user has added the bot to, not all the groups the bot is in
 
-    if (groups.length === 0) { //Check emptyness
+
+    if (groupsList.length === 0) { //Check emptyness
         return ctx.reply(
             'The bot has not joined any groups yet.'
         );
@@ -253,7 +256,7 @@ bot.action('listgroups', async(ctx) => {
 
     let message = 'Groups the bot has joined:\n\n';
 
-    for (const group of groups) {
+    for (const group of groupsList) {
         message += `• ${group.title}\n`;
         message += `  ID: ${group.id}\n`;
         message += `  Type: ${group.type}\n`;
