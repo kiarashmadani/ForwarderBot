@@ -95,11 +95,11 @@ function clearSession(userId) {
 //------------------------------------------------------
 
 //Function to Display The Targets Toggles for users 
-async function buildTargetKeyboard(session) {
+async function buildTargetKeyboard(session, user) {
     const groups = await getGroups(); //Getting These 2 Methods from Database 
     //const users = await getUsers();
     console.log(session);
-    const groupsList = groups.filter(group => group.adder == session.from.username); //Filtering groups to only shows the groups which this user has added the bot to, not all the groups the bot is in
+    const groupsList = groups.filter(group => group.adder == user.username); //Filtering groups to only shows the groups which this user has added the bot to, not all the groups the bot is in
 
     const rows = [];
 
@@ -367,7 +367,7 @@ bot.on('message', async(ctx) => {
 
     return ctx.reply(
         'Select the destinations:',
-        await buildTargetKeyboard(session)
+        await buildTargetKeyboard(session, ctx.from)
     );
 });
 
