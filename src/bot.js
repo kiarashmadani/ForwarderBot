@@ -98,7 +98,7 @@ function clearSession(userId) {
 async function buildTargetKeyboard(session) {
     const groups = await getGroups(); //Getting These 2 Methods from Database 
     const users = await getUsers();
-    const groupsList = groups.filter(group => group.adder == session.from); //Filtering groups to only shows the groups which this user has added the bot to, not all the groups the bot is in
+    const groupsList = groups.filter(group => group.adder == session.from.username); //Filtering groups to only shows the groups which this user has added the bot to, not all the groups the bot is in
 
     const rows = [];
 
@@ -245,10 +245,10 @@ bot.action('listgroups', async(ctx) => {
     }
 
     const groups = await getGroups(); //Get group's list from the database 
-    const groupsList = groups.filter(group => group.adder == ctx.from); //Filtering groups to only shows the groups which this user has added the bot to, not all the groups the bot is in
-    console.log(groupsList);
-    console.log(groups);
-    console.log(ctx.from);
+    const groupsList = groups.filter(group => group.adder == ctx.from.username); //Filtering groups to only shows the groups which this user has added the bot to, not all the groups the bot is in
+    // console.log(groupsList);
+    // console.log(groups);
+    // console.log(ctx.from);
 
     if (groupsList.length === 0) { //Check emptyness
         return ctx.reply(
