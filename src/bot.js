@@ -55,6 +55,7 @@ async function deleteGroupStartMessage(ctx) {
  * }
  */
 const sessions = new Map();
+const groupRegistrationModes = new Map();
 
 function getSession(userId) {
     if (!sessions.has(userId)) {
@@ -158,6 +159,16 @@ bot.start(async(ctx) => {
                         'Already Joined Groups',
                         'listgroups'
                     )
+                ],
+                [
+                    Markup.button.callback(
+                        'Add Groups Which Bot Already Joined',
+                        'add-existing-group'
+                    ),
+                    Markup.button.callback(
+                        'Contact',
+                        'contact'
+                    )
                 ]
             ]),
         );
@@ -167,9 +178,57 @@ bot.start(async(ctx) => {
         return;
     }
 
-    await addGroup(ctx.chat, ctx.from); //Add Group's Name to the Database
+
 
     return deleteGroupStartMessage(ctx);
+});
+
+// ---------------------------------------------------------
+// ADD AN ALREADY-JOINED GROUP
+// ---------------------------------------------------------
+
+bot.action('add-existing-group', async(ctx) => {
+    await ctx.answerCbQuery();
+
+    if (!isPrivateChat(ctx)) {
+        return;
+    }
+
+    return ctx.reply(
+        'How would you like to find the group?',
+        Markup.inlineKeyboard([
+            [Markup.button.callback('Group ID', 'existing-group:id')],
+            [Markup.button.callback('Public Group Link', 'existing-group:link')]
+        ])
+    );
+});
+
+bot.action('existing-group:id', async(ctx) => {
+    await ctx.answerCbQuery();
+    groupRegistrationModes.set(ctx.from.id, 'id');
+
+    return ctx.reply('Send the group ID (for example: -1001234567890).');
+});
+
+bot.action('existing-group:link', async(ctx) => {
+    await ctx.answerCbQuery();
+    groupRegistrationModes.set(ctx.from.id, 'link');
+
+    return ctx.reply('Send the public group link (for example: https://t.me/group_name).');
+});
+
+bot.action('contact', async(ctx) => {
+    await ctx.answerCbQuery();
+
+    if (!isPrivateChat(ctx)) {
+        return;
+    }
+
+    return ctx.reply(
+        'Contact us via email:\n' +
+        'Behradmoosavi1385@gmail.com\n' +
+        'kiarashmadani.85@gmail.com'
+    );
 });
 
 // ---------------------------------------------------------
@@ -323,6 +382,61 @@ bot.on('message', async(ctx) => {
 
     const messageText = ctx.message.text; // Getting the text from User's message
 
+    const registrationMode = groupRegistrationModes.get(ctx.from.id);
+
+    if (registrationMode) {
+        if (!messageText) {
+            return ctx.reply('Please send a group ID or public group link as text.');
+        }
+
+        let groupId;
+
+        if (registrationMode === 'id') {
+            if (!/^-?\d+$/.test(messageText.trim())) {
+                return ctx.reply('That is not a valid group ID. Try again.');
+            }
+
+            groupId = Number(messageText.trim());
+        } else {
+            const linkMatch = messageText.trim().match(
+                /^(?:https?:\/\/)?t\.me\/([A-Za-z0-9_]+)\/?$/i
+            );
+
+            if (!linkMatch) {
+                return ctx.reply('Send a public link such as https://t.me/group_name.');
+            }
+
+            try {
+                const chat = await ctx.telegram.getChat(`@${linkMatch[1]}`);
+                groupId = chat.id;
+            } catch (error) {
+                return ctx.reply('I could not find that public group link. Try again.');
+            }
+        }
+
+        const groups = await getGroups();
+        const matchingGroups = groups.filter(group => group.id === groupId);
+        const existingGroup = matchingGroups[0];
+
+        if (!existingGroup) {
+            return ctx.reply('That group is not already in my database, so I cannot add it to your list.');
+        }
+
+        const isAlreadyInUsersList = matchingGroups.some(
+            group => group.adder === ctx.from.username
+        );
+
+        if (isAlreadyInUsersList) {
+            groupRegistrationModes.delete(ctx.from.id);
+            return ctx.reply('That group is already in your group list.');
+        }
+
+        await addGroup(existingGroup, ctx.from);
+        groupRegistrationModes.delete(ctx.from.id);
+
+        return ctx.reply(`"${existingGroup.title}" was added to your group list.`);
+    }
+
     if (messageText && messageText.startsWith('/')) { //check if it's not command
         return;
     }
@@ -375,7 +489,7 @@ bot.action(/^target:g:(-?\d+)$/, async(ctx) => { //Reg ex for matching the group
     }
 
     return ctx.editMessageReplyMarkup(
-        (await buildTargetKeyboard(session)).reply_markup
+        (await buildTargetKeyboard(session, ctx.from)).reply_markup
     );
 });
 

@@ -125,7 +125,21 @@ async function connectDatabase() {
     await client.connect();
     database = client.db(databaseName);
 
-    await database.collection('groups').createIndex({ id: 1 }, { unique: true });
+    // One user should have only one record for a group, but different users
+    // may save the same group separately.
+    try {
+        await database.collection('groups').dropIndex('id_1');
+    } catch (error) {
+        // Error code 27 means the old index does not exist yet.
+        if (error.code !== 27) {
+            throw error;
+        }
+    }
+
+    await database.collection('groups').createIndex(
+        { id: 1, adder: 1 },
+        { unique: true }
+    );
     await database.collection('users').createIndex({ id: 1 }, { unique: true });
 
     console.log(`Connected to MongoDB database: ${databaseName}`);
@@ -149,14 +163,17 @@ function getDatabase() {
 }
 
 async function addGroup(chat, user) {
-    await getDatabase().collection('groups').insertOne({ id: chat.id }, {
+    await getDatabase().collection('groups').updateOne({
+        id: chat.id,
+        adder: user.username
+    }, {
         $set: {
             id: chat.id,
             title: chat.title,
             type: chat.type,
             adder: user.username
         }
-    });
+    }, { upsert: true });
 }
 
 async function removeGroup(chatId) {
