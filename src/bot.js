@@ -43,24 +43,6 @@ async function deleteGroupStartMessage(ctx) {
     }
 }
 
-/* Recently Added !!!BUG!!!
-const recentlyAddedGroups = new Map();
-const RECENT_GROUP_ADD_TIMEOUT = 60 * 1000;
-
-function markGroupAsRecentlyAdded(chatId) {
-    recentlyAddedGroups.set(chatId, Date.now());
-}
-
-function isAddedBefore(chatId) {
-    const addedAt = recentlyAddedGroups.get(chatId);
-
-    recentlyAddedGroups.delete(chatId);
-
-    return addedAt && Date.now() - addedAt < RECENT_GROUP_ADD_TIMEOUT;
-}
-*/
-
-
 /* Temporary forwarding sessions.
  *
  *
@@ -161,11 +143,11 @@ bot.start(async(ctx) => {
         await addUser(ctx.from); //Add User's Name to the Database
 
         return ctx.reply(
-            `<b>Welcome to the Forwarder Bot! What would you like to do?</b>`,
+            `Welcome to the Forwarder Bot! What would you like to do?`,
             Markup.inlineKeyboard([
                 [
                     Markup.button.callback(
-                        '<b>Forward a Message</b>',
+                        'Forward a Message',
                         'forward'
                     )
                 ],
@@ -179,7 +161,7 @@ bot.start(async(ctx) => {
                         'listgroups'
                     )
                 ]
-            ]), { parse_mode: 'HTML' }
+            ]),
         );
     }
 
@@ -217,7 +199,9 @@ bot.action('add', async(ctx) => {
 
     const botInfo = await ctx.telegram.getMe(); //return an Object of Bot's Information
 
-    const addToGroupUrl = `https://t.me/${botInfo.username}?startgroup`;
+    const allGroups = await getGroups(); //Get group's list from the database
+    console.log(botInfo);
+    const addToGroupUrl = `https://t.me/${botInfo.username}?startgroup`; //URL to add the bot to a new group
 
     return ctx.reply(
         'Choose the group where you want to add me:',
