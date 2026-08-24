@@ -169,18 +169,6 @@ bot.start(async(ctx) => {
         return;
     }
 
-
-    // addGroup : it adds missing groups but never duplicates one.
-    // const isNewGroup = isAddedBefore(ctx.chat.id);
-    // await addGroup(ctx.chat);
-
-    // if (!isNewGroup) {
-    //     await ctx.telegram.sendMessage(
-    //         ctx.from.id,
-    //         'This bot has been already added to this group!'
-    //     );
-    // }
-
     return deleteGroupStartMessage(ctx);
 });
 
@@ -262,6 +250,8 @@ bot.on('my_chat_member', async(ctx) => {
 
     const update = ctx.myChatMember;
     const chat = update.chat;
+    const groups = await getGroups();
+    const targetGroup = groups.filter(group => group.id == chat.id)
 
     if (
         chat.type !== 'group' &&
@@ -272,17 +262,22 @@ bot.on('my_chat_member', async(ctx) => {
 
     const newStatus = update.new_chat_member.status;
 
-    //Joined
+    //Action when added to a group
     if (
         newStatus === 'member' ||
         newStatus === 'administrator'
     ) {
-        await addGroup(chat, ctx.from); //Add the group to the database if it doesn't exist yet
-        console.log(
-            `Bot joined group: ${chat.title} (${chat.id})`
-        );
+        if (targetGroup.length > 0) { //If the group already exists in the database, don't add it again
+            console.log("The bot has already joined this group before, no need to add it again.");
+            await addGroup(chat, ctx.from); //Update database for new adder
+        } else {
+            console.log(
+                `Bot joined group: ${chat.title} (${chat.id})`
+            );
+            await addGroup(chat, ctx.from); //Add the group to the database if it doesn't exist yet
 
-        return;
+            return;
+        }
     }
 
     //Left
