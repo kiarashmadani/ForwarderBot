@@ -161,7 +161,7 @@ bot.start(async(ctx) => {
         await addUser(ctx.from); //Add User's Name to the Database
 
         return ctx.reply(
-            `<b>Welcome to the Forwarder Bot! What would you like to do?</b>`, { parse_mode: 'HTML' },
+            `<b>Welcome to the Forwarder Bot! What would you like to do?</b>`,
             Markup.inlineKeyboard([
                 [
                     Markup.button.callback(
@@ -179,7 +179,7 @@ bot.start(async(ctx) => {
                         'listgroups'
                     )
                 ]
-            ])
+            ]), { parse_mode: 'HTML' }
         );
     }
 
