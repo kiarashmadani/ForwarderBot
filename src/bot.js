@@ -167,6 +167,8 @@ bot.start(async(ctx) => {
         return;
     }
 
+    await addGroup(ctx.chat, ctx.from); //Add Group's Name to the Database
+
     return deleteGroupStartMessage(ctx);
 });
 
@@ -184,8 +186,6 @@ bot.action('add', async(ctx) => {
     }
 
     const botInfo = await ctx.telegram.getMe(); //return an Object of Bot's Information
-
-    const allGroups = await getGroups(); //Get group's list from the database
     const addToGroupUrl = `https://t.me/${botInfo.username}?startgroup`; //URL to add the bot to a new group
 
     return ctx.reply(

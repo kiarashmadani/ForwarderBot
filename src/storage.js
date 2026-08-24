@@ -149,14 +149,14 @@ function getDatabase() {
 }
 
 async function addGroup(chat, user) {
-    await getDatabase().collection('groups').updateOne({ id: chat.id }, {
+    await getDatabase().collection('groups').insertOne({ id: chat.id }, {
         $set: {
             id: chat.id,
             title: chat.title,
             type: chat.type,
             adder: user.username
         }
-    }, { upsert: true });
+    });
 }
 
 async function removeGroup(chatId) {
