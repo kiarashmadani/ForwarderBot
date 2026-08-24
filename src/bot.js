@@ -161,11 +161,11 @@ bot.start(async(ctx) => {
         await addUser(ctx.from); //Add User's Name to the Database
 
         return ctx.reply(
-            'Welcome to the Forwarder Bot! What would you like to do?',
+            `<b>Welcome to the Forwarder Bot!</b> What would you like to do?`,
             Markup.inlineKeyboard([
                 [
                     Markup.button.callback(
-                        'Forward a Message',
+                        ` <b>Forward a Message</b>`,
                         'forward'
                     )
                 ],
