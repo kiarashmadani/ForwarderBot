@@ -79,8 +79,6 @@ function clearSession(userId) {
 //Function to Display The Targets Toggles for users 
 async function buildTargetKeyboard(session, user) {
     const groups = await getGroups(); //Getting These 2 Methods from Database 
-    //const users = await getUsers();
-    console.log(session);
     const groupsList = groups.filter(group => group.adder == user.username); //Filtering groups to only shows the groups which this user has added the bot to, not all the groups the bot is in
 
     const rows = [];
@@ -188,7 +186,6 @@ bot.action('add', async(ctx) => {
     const botInfo = await ctx.telegram.getMe(); //return an Object of Bot's Information
 
     const allGroups = await getGroups(); //Get group's list from the database
-    console.log(botInfo);
     const addToGroupUrl = `https://t.me/${botInfo.username}?startgroup`; //URL to add the bot to a new group
 
     return ctx.reply(
@@ -219,9 +216,6 @@ bot.action('listgroups', async(ctx) => {
 
     const groups = await getGroups(); //Get group's list from the database 
     const groupsList = groups.filter(group => group.adder == ctx.from.username); //Filtering groups to only shows the groups which this user has added the bot to, not all the groups the bot is in
-    // console.log(groupsList);
-    // console.log(groups);
-    // console.log(ctx.from);
 
     if (groupsList.length === 0) { //Check emptyness
         return ctx.reply(
