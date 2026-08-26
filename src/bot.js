@@ -12,6 +12,28 @@ const { Telegraf, Markup } = require('telegraf');
 const { forwardToTargets } = require('./forwarder');
 
 //-----------Declaring Variables and Functions
+
+const WELCOME_MESSAGE =
+    `👋 <b>Welcome to Forwarder Bot!</b>
+
+I'm here to help you forward messages to your groups without the copy-paste gymnastics. Think of me as your personal courier pigeon — except I don't get lost and I definitely don't leave feathers everywhere. 🐦
+
+<b>Here's what I can do:</b>
+📨 Forward any message to one or more of your groups
+➕ Join new groups on your behalf
+📋 Keep track of the groups you've added me to
+
+<b>A few house rules before we start:</b> 📜
+🚫 No spamming — nobody likes a chatty pigeon
+🚫 No illegal content, links, or requests
+🚫 No hate speech, harassment, or rude behavior towards others
+🔒 Only forward content you actually have the right to share
+⚖️ You're responsible for what you forward through me — I just carry the message, I don't read your mail
+
+Follow those, and we'll get along great. 🤝
+
+Tap a button below (or use /forward, /addgroup, /mygroups anytime) to get going!`;
+
 const token = process.env.BOT_TOKEN;
 const bot = new Telegraf(token);
 
@@ -121,9 +143,7 @@ async function buildTargetKeyboard(session, user) {
 bot.start(async(ctx) => {
     if (isPrivateChat(ctx)) { //Only Starts for Private Chats, not for Groups
         await addUser(ctx.from); //Add User's Name to the Database
-
-        return ctx.reply(
-            `Welcome to the Forwarder Bot! What would you like to do?`,
+        return ctx.reply(WELCOME_MESSAGE,
             Markup.inlineKeyboard([
                 [
                     Markup.button.callback(
@@ -542,21 +562,16 @@ bot.action('target:send', async(ctx) => {
 // CANCEL
 // ---------------------------------------------------------
 
-bot.action('Cancel', async(ctx) => {
-
-    await ctx.answerCbQuery();
-
+async function handleCancel(ctx) {
     if (!isPrivateChat(ctx)) {
         return;
     }
 
     clearSession(ctx.from.id);
+    groupRegistrationModes.delete(ctx.from.id);
 
-    return ctx.editMessageText(
-        'Forwarding cancelled.'
-    );
-});
-
+    return ctx.reply('Cancelled.');
+}
 
 bot.action('Cancel', async(ctx) => {
     await ctx.answerCbQuery();
@@ -591,11 +606,6 @@ bot.action('contact', async(ctx) => {
         'Behradmoosavi1385@gmail.com\n' +
         'kiarashmadani.85@gmail.com'
     );
-});
-
-bot.action('contact', async(ctx) => {
-    await ctx.answerCbQuery();
-    return handleContact(ctx);
 });
 
 bot.command('contact', handleContact);
