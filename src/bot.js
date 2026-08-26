@@ -37,6 +37,16 @@ Tap a button below (or use /start anytime) to get going!`;
 const token = process.env.BOT_TOKEN;
 const bot = new Telegraf(token);
 
+
+//Logging for finding bug
+process.on('unhandledRejection', (reason) => {
+    console.error('🔴 UNHANDLED REJECTION (this was likely crashing your server):', reason);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('🔴 UNCAUGHT EXCEPTION (this was likely crashing your server):', error);
+});
+
 if (!token) {
     throw new Error('BOT_TOKEN is missing. Add it to your .env file.');
 }
@@ -141,50 +151,46 @@ async function buildTargetKeyboard(session, user) {
 // ---------------------------------------------------------
 
 bot.start(async(ctx) => {
-    if (isPrivateChat(ctx)) { //Only Starts for Private Chats, not for Groups
-        await addUser(ctx.from); //Add User's Name to the Database
-        return ctx.reply(welcome_message, {
-            parse_mode: "HTML",
-            ...Markup.inlineKeyboard([
-                [
-                    Markup.button.callback(
-                        'Forward a Message',
-                        'forward'
-                    )
-                ],
-                [
-                    Markup.button.callback(
-                        'Add Bot to a New Group',
-                        'add'
-                    ),
-                    Markup.button.callback(
-                        'Already Joined Groups',
-                        'listgroups'
-                    )
-                ],
-                [
-                    Markup.button.callback(
-                        'Add Groups Which Bot Already Joined',
-                        'add-existing-group'
-                    ),
-                    Markup.button.callback(
-                        'Contact',
-                        'contact'
-                    )
-                ]
-            ]),
-        });
+    console.log(`[/start] triggered by user ${ctx.from.id} (${ctx.from.username || 'no username'}) in chat type: ${ctx.chat.type}`);
+
+    if (isPrivateChat(ctx)) {
+        await addUser(ctx.from);
+
+        try {
+            console.log('[/start] Attempting to send HTML welcome message...');
+
+            await ctx.reply(welcome_message, {
+                parse_mode: "HTML",
+                ...Markup.inlineKeyboard([
+                    [
+                        Markup.button.callback('Forward a Message', 'forward')
+                    ],
+                    [
+                        Markup.button.callback('Add Bot to a New Group', 'add'),
+                        Markup.button.callback('Already Joined Groups', 'listgroups')
+                    ],
+                    [
+                        Markup.button.callback('Add Groups Which Bot Already Joined', 'add-existing-group'),
+                        Markup.button.callback('Contact', 'contact')
+                    ]
+                ]),
+            });
+
+            console.log('[/start] Welcome message sent successfully.');
+        } catch (error) {
+            console.error('[/start] FAILED to send welcome message:', error.message);
+            console.error('[/start] Full error:', JSON.stringify(error, null, 2));
+        }
+
+        return;
     }
 
     if (!isGroupChat(ctx)) {
         return;
     }
 
-
-
     return deleteGroupStartMessage(ctx);
 });
-
 // ---------------------------------------------------------
 // ADD AN ALREADY-JOINED GROUP
 // ---------------------------------------------------------
