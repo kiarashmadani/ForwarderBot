@@ -19,7 +19,7 @@ const welcome_message =
 I'm here to help you forward messages to your groups without the copy-paste gymnastics. Think of me as your personal courier pigeon — except I don't get lost and I definitely don't leave feathers everywhere. 🐦
 
 <b>Here's what I can do:</b>
-📨 Forward any message to one or more of your groups
+📨 <i>Forward any message to one or more of your groups</i>
 ➕ Join new groups on your behalf
 📋 Keep track of the groups you've added me to
 
@@ -32,7 +32,7 @@ I'm here to help you forward messages to your groups without the copy-paste gymn
 
 Follow those, and we'll get along great. 🤝
 
-Tap a button below (or use /forward, /addgroup, /mygroups anytime) to get going!`;
+Tap a button below (or use /start anytime) to get going!`;
 
 const token = process.env.BOT_TOKEN;
 const bot = new Telegraf(token);
@@ -143,8 +143,9 @@ async function buildTargetKeyboard(session, user) {
 bot.start(async(ctx) => {
     if (isPrivateChat(ctx)) { //Only Starts for Private Chats, not for Groups
         await addUser(ctx.from); //Add User's Name to the Database
-        return ctx.reply(welcome_message,
-            Markup.inlineKeyboard([
+        return ctx.reply(welcome_message, {
+            parse_mode: "Html",
+            ...Markup.inlineKeyboard([
                 [
                     Markup.button.callback(
                         'Forward a Message',
@@ -172,7 +173,7 @@ bot.start(async(ctx) => {
                     )
                 ]
             ]),
-        );
+        });
     }
 
     if (!isGroupChat(ctx)) {
