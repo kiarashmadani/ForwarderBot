@@ -608,5 +608,4 @@ bot.action('contact', async(ctx) => {
     );
 });
 
-bot.command('contact', handleContact);
 module.exports = bot;
