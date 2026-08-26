@@ -208,12 +208,15 @@ bot.action('add-existing-group', async(ctx) => {
 bot.action('existing-group:id', async(ctx) => { //action for id button
     await ctx.answerCbQuery();
     groupRegistrationModes.set(ctx.from.id, 'id');
-
+    messageId = ctx.update.callback_query.message.message_id;
+    await ctx.deleteMessage(messageId);
     return ctx.reply('Send the group ID (for example: -1001234567890).');
 });
 
 bot.action('existing-group:link', async(ctx) => { //action for link button
     await ctx.answerCbQuery();
+    messageId = ctx.update.callback_query.message.message_id;
+    await ctx.deleteMessage(messageId)
     groupRegistrationModes.set(ctx.from.id, 'link');
 
     return ctx.reply('Send the public group link (for example: https://t.me/group_name).');
@@ -605,7 +608,7 @@ bot.action('contact', async(ctx) => {
     return ctx.reply(
         'Contact us via email:\n' +
         'Behradmoosavi1385@gmail.com\n' +
-        'kiarashmadani.85@gmail.com'
+        'kiarash.madani85@gmail.com'
     );
 });
 
