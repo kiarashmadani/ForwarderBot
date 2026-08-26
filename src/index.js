@@ -94,6 +94,17 @@ server.listen(PORT, '0.0.0.0', () => {
 async function startBot() {
     await connectDatabase();
 
+    //button for commands
+    await bot.telegram.setMyCommands([
+        { command: 'start', description: 'Open the main menu' },
+        { command: 'forward', description: 'Forward a message to your groups' },
+        { command: 'addgroup', description: 'Add the bot to a new group' },
+        { command: 'addexisting', description: 'Add a group the bot already joined' },
+        { command: 'mygroups', description: 'List your saved groups' },
+        { command: 'cancel', description: 'Cancel the current action' },
+        { command: 'contact', description: 'Contact the developers' }
+    ]);
+
     if (!DOMAIN) {
         throw new Error('WEBHOOK_DOMAIN or RENDER_EXTERNAL_URL is missing.');
     }

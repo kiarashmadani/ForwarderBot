@@ -558,6 +558,13 @@ bot.action('Cancel', async(ctx) => {
 });
 
 
+bot.action('Cancel', async(ctx) => {
+    await ctx.answerCbQuery();
+    return handleCancel(ctx);
+});
+
+bot.command('cancel', handleCancel);
+
 // ---------------------------------------------------------
 // ERROR HANDLING
 // ---------------------------------------------------------
@@ -586,5 +593,10 @@ bot.action('contact', async(ctx) => {
     );
 });
 
+bot.action('contact', async(ctx) => {
+    await ctx.answerCbQuery();
+    return handleContact(ctx);
+});
 
+bot.command('contact', handleContact);
 module.exports = bot;
