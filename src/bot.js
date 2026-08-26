@@ -13,7 +13,7 @@ const { forwardToTargets } = require('./forwarder');
 
 //-----------Declaring Variables and Functions
 
-const WELCOME_MESSAGE =
+const welcome_message =
     `👋 <b>Welcome to Forwarder Bot!</b>
 
 I'm here to help you forward messages to your groups without the copy-paste gymnastics. Think of me as your personal courier pigeon — except I don't get lost and I definitely don't leave feathers everywhere. 🐦
@@ -143,7 +143,7 @@ async function buildTargetKeyboard(session, user) {
 bot.start(async(ctx) => {
     if (isPrivateChat(ctx)) { //Only Starts for Private Chats, not for Groups
         await addUser(ctx.from); //Add User's Name to the Database
-        return ctx.reply(WELCOME_MESSAGE,
+        return ctx.reply(welcome_message,
             Markup.inlineKeyboard([
                 [
                     Markup.button.callback(
