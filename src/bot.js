@@ -96,25 +96,6 @@ async function buildTargetKeyboard(session, user) {
         ]);
     }
 
-
-    //Adding Users to the Forward's List
-    /*
-    for (const user of users) {
-        const selected = session.targets.includes(user.id);
-
-        const name = user.username ?
-            `@${user.username}(Yourself)` :
-            user.firstName || String(user.id);
-
-        rows.push([
-            Markup.button.callback(
-                `${selected ? '✅' : '☐'} ${name}`,
-                `target:u:${user.id}`
-            )
-        ]);
-    }
-    */
-
     rows.push([
         Markup.button.callback(
             'SEND',
@@ -194,42 +175,29 @@ bot.action('add-existing-group', async(ctx) => {
         return;
     }
 
-    return ctx.reply(
+    return ctx.reply( //2 Buttons for the user to choose the way of identifcation of the group
         'How would you like to find the group?',
         Markup.inlineKeyboard([
-            [Markup.button.callback('Group ID', 'existing-group:id')],
             [Markup.button.callback('Public Group Link', 'existing-group:link')]
+            [Markup.button.callback('Group ID', 'existing-group:id')],
         ])
     );
 });
 
-bot.action('existing-group:id', async(ctx) => {
+bot.action('existing-group:id', async(ctx) => { //action for id button
     await ctx.answerCbQuery();
     groupRegistrationModes.set(ctx.from.id, 'id');
 
     return ctx.reply('Send the group ID (for example: -1001234567890).');
 });
 
-bot.action('existing-group:link', async(ctx) => {
+bot.action('existing-group:link', async(ctx) => { //action for link button
     await ctx.answerCbQuery();
     groupRegistrationModes.set(ctx.from.id, 'link');
 
     return ctx.reply('Send the public group link (for example: https://t.me/group_name).');
 });
 
-bot.action('contact', async(ctx) => {
-    await ctx.answerCbQuery();
-
-    if (!isPrivateChat(ctx)) {
-        return;
-    }
-
-    return ctx.reply(
-        'Contact us via email:\n' +
-        'Behradmoosavi1385@gmail.com\n' +
-        'kiarashmadani.85@gmail.com'
-    );
-});
 
 // ---------------------------------------------------------
 // ADD BOT TO GROUP
@@ -392,14 +360,14 @@ bot.on('message', async(ctx) => {
         let groupId;
 
         if (registrationMode === 'id') {
-            if (!/^-?\d+$/.test(messageText.trim())) {
+            if (!/^-?\d+$/.test(messageText.trim())) { //check for valid id
                 return ctx.reply('That is not a valid group ID. Try again.');
             }
 
             groupId = Number(messageText.trim());
         } else {
             const linkMatch = messageText.trim().match(
-                /^(?:https?:\/\/)?t\.me\/([A-Za-z0-9_]+)\/?$/i
+                /^(?:https?:\/\/)?t\.me\/([A-Za-z0-9_]+)\/?$/i //check for valid link
             );
 
             if (!linkMatch) {
@@ -508,6 +476,7 @@ bot.action('target:send', async(ctx) => {
     const userId = ctx.from.id;
     const session = sessions.get(userId);
 
+    //checking session's validity
     if (!session) {
         return ctx.reply(
             'There is no active forwarding session.'
@@ -599,5 +568,23 @@ bot.catch((error, ctx) => {
         error
     );
 });
+
+// ---------------------------------------------------------
+//Contact
+// ---------------------------------------------------------
+bot.action('contact', async(ctx) => {
+    await ctx.answerCbQuery();
+
+    if (!isPrivateChat(ctx)) {
+        return;
+    }
+
+    return ctx.reply(
+        'Contact us via email:\n' +
+        'Behradmoosavi1385@gmail.com\n' +
+        'kiarashmadani.85@gmail.com'
+    );
+});
+
 
 module.exports = bot;
