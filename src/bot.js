@@ -144,7 +144,7 @@ bot.start(async(ctx) => {
     if (isPrivateChat(ctx)) { //Only Starts for Private Chats, not for Groups
         await addUser(ctx.from); //Add User's Name to the Database
         return ctx.reply(welcome_message, {
-            parse_mode: "Html",
+            parse_mode: "HTML",
             ...Markup.inlineKeyboard([
                 [
                     Markup.button.callback(

@@ -1,3 +1,7 @@
+//----------------------------
+//Long Polling
+//---------------------------
+
 // require('dotenv').config();
 // const {
 //     connectDatabase,
@@ -77,7 +81,16 @@ const webhookHandler = bot.webhookCallback(WEBHOOK_PATH);
 
 const server = http.createServer((req, res) => {
     if (req.url === WEBHOOK_PATH) {
-        return webhookHandler(req, res);
+        webhookHandler(req, res).catch((error) => {
+            console.error('Webhook handling error:', error);
+
+            if (!res.headersSent) {
+                res.writeHead(500);
+                res.end();
+            }
+        });
+
+        return;
     }
 
     res.writeHead(200, {
