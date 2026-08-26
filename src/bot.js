@@ -178,8 +178,8 @@ bot.action('add-existing-group', async(ctx) => {
     return ctx.reply( //2 Buttons for the user to choose the way of identifcation of the group
         'How would you like to find the group?',
         Markup.inlineKeyboard([
-            [Markup.button.callback('Public Group Link', 'existing-group:link')]
-            [Markup.button.callback('Group ID', 'existing-group:id')],
+            [Markup.button.callback('Public Group Link', 'existing-group:link')],
+            [Markup.button.callback('Group ID', 'existing-group:id')]
         ])
     );
 });
